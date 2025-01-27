@@ -56,8 +56,9 @@ Example `.env` file:
 
 ```
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-KAFKA_GROUP_ID=my-consumer-group
+KAFKA_GROUP_ID=test-group
 KAFKA_TOPIC=Scenario-Execute
+KAFKA_RESPONSE_TOPIC=Scenario-Execute-Response
 ```
 
 ### Run the Service:
@@ -74,8 +75,22 @@ The service uses threads to handle message processing concurrently. Each message
 
 ### Python GIL Considerations:
 
-Python’s Global Interpreter Lock (GIL) affects true CPU-bound tasks when using threads. In this script, threading is used to handle long-running tasks concurrently, but Python’s GIL may limit performance if tasks are CPU-bound. To achieve better parallelism for CPU-bound tasks, consider using multiprocessing or scaling the service across multiple machines.
+Python's Global Interpreter Lock (GIL) affects true CPU-bound tasks when using threads. In this script, threading is used to handle long-running tasks concurrently, but Python's GIL may limit performance if tasks are CPU-bound. To achieve better parallelism for CPU-bound tasks, consider using multiprocessing or scaling the service across multiple machines.
 
 ## Simulated Long-Running Task
 
 The service simulates a long-running task in the `handle_message` function by using `time.sleep(5)` to represent a CPU-intensive operation. This task demonstrates how the consumer can handle multiple messages concurrently without being blocked by a single long-running task.
+
+## Challenges Faced and Solutions
+
+### Challenge 1: Handling Concurrent Message Processing
+One of the main challenges was ensuring that the service could handle multiple messages concurrently without overwhelming the system. The initial implementation faced issues with message processing delays, especially when multiple long-running tasks were triggered simultaneously.
+
+**Solution:** 
+To address this, I implemented threading to allow each message to be processed in its own thread. This approach helped distribute the workload across available CPU cores, improving the overall responsiveness of the service.
+
+### Challenge 2: Message Decoding Errors
+During testing, I encountered issues with decoding messages from Kafka, particularly when the message format was not as expected. This led to exceptions that could crash the consumer.
+
+**Solution:** 
+I added error handling in the `decode_message` function to catch `json.JSONDecodeError` exceptions. This ensured that the consumer could skip invalid messages without crashing, allowing it to continue processing valid messages.
